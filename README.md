@@ -82,7 +82,7 @@ agent names the missing permission in its error message.
 | Voice | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` | Optional — falls back to the macOS `say` voice |
 | You | `USER_NAME`, `USER_EMAIL`, `USER_SLACK_HANDLE` | Personalises prompts, Slack, Dossier |
 | Slack bridge | `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, `SLACK_BRIDGE_CHANNEL`, `SLACK_BRIDGE_OWNER` | See below |
-| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` | Gmail/Calendar tools |
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` | Gmail, Calendar, Docs, Sheets, Meet, Drive — see the OAuth Playground walkthrough below |
 | Tuning | `FRIDAY_*` knobs | Timeouts, budgets, prewarm — documented inline in `.env.example` |
 
 ### Slack bridge (optional)
@@ -96,11 +96,112 @@ agent names the missing permission in its error message.
    your member ID in `SLACK_BRIDGE_OWNER`. Restart COSMOS — messages in that
    channel now run the agent, with confirmations in-thread.
 
-### Google Workspace (optional)
+### Google Workspace (optional) — Gmail, Calendar, Docs, Sheets, Meet
 
-Create an OAuth **Desktop app** in Google Cloud Console (Gmail + Calendar
-scopes), then obtain a refresh token for your account (any standard OAuth
-helper works) and fill the three `GOOGLE_*` vars.
+Auth is a **single OAuth2 refresh token** (`services/google.py`): COSMOS
+exchanges it for a short-lived access token at
+`https://oauth2.googleapis.com/token` on demand. There is no browser consent
+flow at runtime and no token file on disk — you mint the refresh token once and
+paste it into `backend/.env`.
+
+The quickest way to mint one is **Google's OAuth 2.0 Playground**, using your
+*own* client credentials.
+
+**1 — Create the Cloud project and enable the APIs**
+
+Go to [console.cloud.google.com](https://console.cloud.google.com) → create (or
+pick) a project → **APIs & Services › Library** → enable each API you want:
+
+| API | Enables |
+|---|---|
+| Gmail API | search/read mail, drafts, send |
+| Google Calendar API | list/create/delete events |
+| Google Docs API | create, read, edit docs |
+| Google Sheets API | create sheets, read/write ranges |
+| Google Meet API | create Meet spaces |
+| Google Drive API | file lookup/listing |
+
+A tool whose API is not enabled fails with a clear error and the agent falls
+back — enabling only Gmail + Calendar is a perfectly valid setup.
+
+**2 — Configure the consent screen**
+
+**APIs & Services › OAuth consent screen** → **External** → fill the app name
+and your email. Leave it in **Testing** and add your own Google account under
+**Test users**. (In Testing mode refresh tokens expire after 7 days — see the
+note below.)
+
+**3 — Create the OAuth client — must be "Web application"**
+
+**Credentials › Create Credentials › OAuth client ID › Web application**.
+
+Under **Authorised redirect URIs** add exactly:
+
+```
+https://developers.google.com/oauthplayground
+```
+
+> This is why it must be a **Web application** client, not a Desktop one — the
+> Playground redirects back to that URI, and Google rejects the exchange if it
+> isn't registered on the client you're using.
+
+Copy the **Client ID** and **Client secret**.
+
+**4 — Mint the refresh token in the OAuth Playground**
+
+Open [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground).
+
+1. Click the **⚙ gear** (top right) → tick **Use your own OAuth credentials** →
+   paste your Client ID and Client secret.
+2. In **Step 1**, paste these scopes into the "Input your own scopes" box
+   (space-separated) — trim to match the APIs you enabled:
+
+```
+https://www.googleapis.com/auth/gmail.modify
+https://www.googleapis.com/auth/gmail.send
+https://www.googleapis.com/auth/calendar
+https://www.googleapis.com/auth/documents
+https://www.googleapis.com/auth/spreadsheets
+https://www.googleapis.com/auth/drive.file
+https://www.googleapis.com/auth/meetings.space.created
+```
+
+3. **Authorize APIs** → sign in with the account you added as a test user →
+   **Allow**. (You'll see an "unverified app" warning — expected for your own
+   Testing-mode client: **Advanced › Go to <app> (unsafe)**.)
+4. In **Step 2**, click **Exchange authorization code for tokens**.
+5. Copy the **Refresh token** (starts with `1//`).
+
+**5 — Fill `backend/.env` and restart**
+
+```bash
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+GOOGLE_REFRESH_TOKEN=1//xxxxx
+```
+
+Then `./start.sh` and ask COSMOS *"what's on my calendar today?"* to confirm.
+
+**Scope notes**
+
+- `gmail.modify` covers search/read/draft; `gmail.send` is separate and is what
+  actually sends. Drop `gmail.send` if you want draft-only (safer for a demo).
+- `drive.file` only grants access to files COSMOS itself creates. Use
+  `https://www.googleapis.com/auth/drive` instead if you want it to reach
+  pre-existing files — broader, so only if you need it.
+- Adding a scope later means re-running step 4 — the refresh token's scopes are
+  fixed at mint time.
+
+**Token expiry**
+
+While the consent screen is in **Testing**, Google expires refresh tokens after
+**7 days** — you'll see `invalid_grant` and need to repeat step 4. To get a
+non-expiring token, **Publish** the app on the consent screen (staying in
+Testing is fine for a demo or hackathon; just re-mint if it's been a week).
+
+> Treat the refresh token like a password — it grants ongoing access to your
+> mail and calendar. It lives only in `backend/.env`, which is gitignored and
+> never committed.
 
 ### MCP connectors (optional)
 
