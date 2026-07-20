@@ -1,0 +1,42 @@
+{
+  "_readme": [
+    "Copy this file to ~/.friday/mcp.json and edit. COSMOS connects at boot",
+    "(or via the mcp tool: action=reload). ${VAR} expands from the environment,",
+    "so tokens can live in backend/.env instead of this file.",
+    "Per-server keys: command+args+env (stdio) | url+headers (remote http),",
+    "tools (allowlist), timeout (seconds), enabled (false to skip).",
+    "Gating: destructiveHint confirms in both modes; everything else confirms",
+    "in ask mode and is always blocked in unattended scheduled runs.",
+    "readOnlyHint lets a tool run free ONLY when you set \"trust\": true on",
+    "the server — annotations are server-controlled, so untrusted servers'",
+    "tools always confirm. For servers with no annotations, add a",
+    "\"read_tools\": [names] allowlist so their reads run free (trust required);",
+    "any tool not listed still confirms."
+  ],
+  "mcpServers": {
+    "everything-test": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "enabled": false
+    },
+    "github": {
+      "_note": "GitHub MCP server. Put a PAT in backend/.env as GITHUB_PAT, flip enabled to true, then run 'mcp reload'.",
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}" },
+      "enabled": false
+    },
+    "gcal": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@cocal/google-calendar-mcp"],
+      "env": { "GOOGLE_OAUTH_CREDENTIALS": "${HOME}/.friday/gcal-oauth.json" },
+      "trust": true,
+      "enabled": false
+    },
+    "gmail": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@gongrzhe/server-gmail-autoauth-mcp"],
+      "enabled": false
+    }
+  }
+}

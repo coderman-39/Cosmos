@@ -1,0 +1,57 @@
+# Cosmos Slack app manifest — create at https://api.slack.com/apps
+#   → "Create New App" → "From an app manifest" → pick the workspace → paste this.
+# After creating:
+#   1. Basic Information → App-Level Tokens → Generate token with scope
+#      `connections:write`  → this is SLACK_APP_TOKEN (xapp-…)
+#   2. Install App → Install to Workspace → Bot User OAuth Token is
+#      SLACK_BOT_TOKEN (xoxb-…)
+#   3. Put both in backend/.env, /invite @cosmos to the bridge channel,
+#      restart the backend.
+# IMPORTANT: the app must be DEDICATED to Cosmos. Socket Mode delivers each
+# event to exactly ONE connected consumer — sharing an app with any other
+# service makes Slack round-robin messages between them and Cosmos randomly
+# never sees them.
+
+display_information:
+  name: Cosmos
+  description: Personal AI command bridge — assign Cosmos tasks from Slack
+  background_color: "#02121c"
+
+features:
+  bot_user:
+    display_name: cosmos
+    always_online: true
+  slash_commands:
+    - command: /cosmos          # /cosmos <task> — Socket Mode, no request URL
+      description: Assign Cosmos a task
+      usage_hint: "[what you want done]"
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - chat:write          # replies in threads
+      - files:write         # deliver screenshots/documents
+      - files:read
+      - reactions:write     # 👀 / ✅ / ❌ acks on your commands
+      - channels:history    # read + receive channel messages (public)
+      - channels:read
+      - groups:history      # same for private channels
+      - groups:read
+      - im:history          # receive DMs (the mobile path)
+      - im:read
+      - im:write
+      - users:read
+      - commands            # enables the /cosmos slash command
+
+settings:
+  event_subscriptions:
+    bot_events:
+      - message.channels
+      - message.groups
+      - message.im
+  interactivity:
+    is_enabled: true        # future: approve/deny buttons for confirms
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
