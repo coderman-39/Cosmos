@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+websockets==14.1
+openai>=1.90
+httpx[socks]==0.28.1
+python-dotenv==1.0.1
+certifi>=2024.0.0
+truststore>=0.10                 # macOS system-keychain TLS trust (Zscaler MITM CA)
+# ── Document intelligence (read_document tool) ──
+pypdf>=5.0                       # PDF text extraction (pdftotext used first if installed)
+pyobjc-framework-Vision>=10.0    # on-device OCR via Apple Vision
+pyobjc-framework-NaturalLanguage>=10.0  # offline embeddings fallback (semantic recall)
+pyobjc-framework-ApplicationServices>=10.0  # Accessibility element-at-cursor (Kinesis semantic capture)
+croniter>=2.0                    # background scheduler cron expressions
