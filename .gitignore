@@ -1,0 +1,33 @@
+# ── Secrets — never commit real keys; use .env.example as the template ──────
+.env
+.env.*
+!.env.example
+backend/.env
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# ── Node / frontend ──────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+
+# ── Logs & local state ───────────────────────────────────────────────────────
+*.log
+logs/
+.claude-flow/
+.friday/
