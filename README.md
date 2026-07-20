@@ -145,6 +145,36 @@ macOS: shell / AppleScript / clicks / screenshots / Chrome CDP / files / git
 - **Tests**: `cd backend && .venv/bin/python -m pytest` (~40 files, no network:
   LLM calls are faked at the client seam).
 
+## How this was built
+
+**Codex wrote this codebase.** Every part of COSMOS in this repository was
+authored with OpenAI Codex — the ~50 Python service modules under
+`backend/services/`, the FastAPI app and WebSocket protocol v3 in
+`backend/main.py`, the Mutate self-healing engine (`services/mutate.py`), the
+React HUD under `frontend/src/`, and the test suite under `backend/tests/`.
+Work was driven prompt-by-prompt, module by module, with each module reviewed
+and iterated against its tests before moving on. The commit history in this
+repo groups that output by subsystem so it can be read in order.
+
+**GPT-5.6 runs it.** The same model family that wrote the code is the runtime
+brain at execution time:
+
+| Where | Model | What it does |
+|---|---|---|
+| Agent loop (`services/agent.py:43`) | `FRIDAY_AGENT_MODEL` → **gpt-5.6** | The observe-think-act loop: picks among ~50 tools, passes the risk gate, self-verifies its own results |
+| Fast paths (`agent.py:44`, `raptor.py`, `promises.py`, `slack.py`) | `FRIDAY_FAST_MODEL` → **gpt-5.6** | Cheap classification, routing and short rewrites that don't need the full loop |
+| Fallback chain (`services/llm.py:59-61`) | `FRIDAY_AGENT_FALLBACKS` / `FRIDAY_FAST_FALLBACKS` → **gpt-5.6-mini** | On rate-limit or error, `llm.py` fails over down the chain with a per-model cooldown — including mid-stream failover |
+| Mutate scan (`mutate.py:62`) | `FRIDAY_MUTATE_SCAN_MODEL` → fast model | Reads the flight recorder and audit log, proposes what to fix |
+| Mutate patch (`mutate.py:63`) | `FRIDAY_MUTATE_MODEL` → **gpt-5.6** | Writes the actual patches to COSMOS's own source, behind the boot + test gates |
+| Subagents (`services/subagent.py`) | inherits the agent model | Parallel scoped agents spawned by the main loop |
+| Embeddings (`services/embeddings.py:25`) | `FRIDAY_EMBED_MODEL` → `text-embedding-3-small` | Semantic recall and the RAPTOR memory tree |
+
+Every model id is an env override — the defaults above are what ships in
+`backend/.env.example`.
+
+So the loop closes: Codex wrote the agent, and the agent uses GPT-5.6 to
+rewrite the code Codex wrote.
+
 ## Security model
 
 - Binds to `127.0.0.1` only (`FRIDAY_HOST` to override — don't).
