@@ -175,6 +175,56 @@ Every model id is an env override — the defaults above are what ships in
 So the loop closes: Codex wrote the agent, and the agent uses GPT-5.6 to
 rewrite the code Codex wrote.
 
+## Testing
+
+The suite is **offline** — every OpenAI call is faked at the client seam in
+`services/llm.py`, so no API key and no network access are needed to run it.
+Nothing touches `~/.friday/`; tests use temp dirs.
+
+```bash
+# after ./start.sh has built the venv:
+cd backend && .venv/bin/python -m pytest
+
+# or from a clean checkout, without running start.sh:
+cd backend
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt -r requirements-dev.txt
+.venv/bin/python -m pytest
+```
+
+Expected: **699 passed** across 43 files in ~5s.
+
+```
+699 passed in 4.65s
+```
+
+Useful invocations:
+
+```bash
+.venv/bin/python -m pytest tests/test_mutate.py      # one module
+.venv/bin/python -m pytest -k "risk or verify"       # by name
+.venv/bin/python -m pytest -x -vv                    # stop at first failure, verbose
+```
+
+`pytest.ini` sets `asyncio_mode = auto`, so `async def test_*` works with no
+per-test marker. What's covered: the agent's risk gate and permission modes,
+the full Mutate pipeline (scan → patch → boot gate → test gate → restart),
+LLM fallback/cooldown and streaming failover, memory/recall, and each
+integration's translation layer.
+
+### Verified environments
+
+| | Version | Result |
+|---|---|---|
+| macOS | 15 (Darwin 25.5, Apple Silicon) | 699 passed |
+| Python | 3.14.0 | 699 passed |
+| Python | 3.11+ | minimum supported |
+| Node | 18+ | required for the HUD build |
+
+The backend tests are pure Python and platform-independent; the *runtime*
+features they exercise (AppleScript, clicks, screenshots, Chrome CDP) are
+macOS-only, which is why COSMOS itself is macOS-only.
+
 ## Security model
 
 - Binds to `127.0.0.1` only (`FRIDAY_HOST` to override — don't).
