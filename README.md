@@ -1,4 +1,4 @@
-# COSMOS — the local developer agent that can rewrite its own code
+# COSMOS — a local developer agent with real control of your Mac
 
 COSMOS is a locally-hosted AI developer agent for your Mac: a voice-and-text
 JARVIS-style webapp that drives your machine end-to-end — terminal, browser,
@@ -6,12 +6,27 @@ files, git, screen, integrations — powered by **GPT-5.6** through the OpenAI
 API. Everything runs on `localhost`; your data, credentials and actions never
 leave your machine except for the model calls themselves.
 
-Its signature feature is **Mutate**: COSMOS reads its own activity log and
-flight recorder, diagnoses its own failures, proposes fixes to **its own source
-code**, and — with one click — patches itself, proves the new code boots, runs
-its own tests, and restarts itself live *without dying* (same PID, the UI just
-reconnects). You can also just tell it what to change about itself, frontend
-included.
+**Control is the core.** The agent loop runs ~50 real tools against the actual
+machine, not a sandbox: it runs shell commands, edits files, drives Chrome over
+CDP, takes and reasons about screenshots, clicks and types via AppleScript,
+works your Git repos, searches the web, and reads and writes your Google
+Workspace and Slack. Dangerous actions pass a risk gate, every action lands in
+an append-only audit trail, and destructive ones leave undo snapshots.
+
+Built on top of that control are five capabilities that make it a genuine
+developer tool rather than a chat window:
+
+| | |
+|---|---|
+| **Control** | ~50 tools over shell, files, Git, browser (CDP), screen, macOS UI, and your connectors — with a risk gate, audit trail and undo |
+| **Panel** | A multi-agent swarm board — spawn parallel worker agents across a task list and watch them work simultaneously |
+| **Vision** | Reflexes: watch a region of your screen or any webpage and act automatically when it changes |
+| **Kinesis** | Record a UI workflow once, then replay it semantically — it understands the steps rather than replaying blind pixel coordinates |
+| **Mutate** | Self-healing: reads its own flight recorder, diagnoses its own failures, patches **its own source code**, proves the new code boots, runs its own tests, and restarts live without dying (same PID — the UI just reconnects) |
+
+Plus **Nexus** (a live mind-map of what it knows), **Dossier** (per-person
+files built from your comms), **Skills** (markdown playbooks it can edit
+itself), and long-term **Memory** with semantic recall.
 
 ## Features
 
